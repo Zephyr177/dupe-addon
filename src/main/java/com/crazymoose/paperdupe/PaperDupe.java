@@ -40,7 +40,7 @@ public class PaperDupe extends Module {
             ));
         }
         mc.player.networkHandler.sendPacket(new BookUpdateC2SPacket(
-            mc.player.getInventory().selectedSlot, List.of(""), Optional.of("The quick brown fox jumps over the lazy dog"
+            mc.player.getInventory().selectedSlot, List.of(""), Optional.of("Hello World Title"
         )));
         toggle();
     }
