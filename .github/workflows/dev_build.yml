@@ -21,6 +21,14 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
 
+      # --- 新增步骤：上传构建后的产物 ---
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts # 给产物起一个名字，方便识别
+          path: ./build/libs/*.jar # 指定要上传的文件路径，可以使用 glob 模式
+      # ---------------------------------
+
       - name: Release
         uses: marvinpinto/action-automatic-releases@latest
         with:
