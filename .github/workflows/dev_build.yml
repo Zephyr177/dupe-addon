@@ -1,4 +1,5 @@
 name: Publish Development Build
+
 on: push
 
 jobs:
@@ -7,19 +8,30 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
       - name: Wrapper Validation
         uses: gradle/actions/wrapper-validation@v3
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           java-version: 21
           distribution: adopt
+
       - name: Build with Gradle
         run: ./gradlew build
+
       - name: Release
         uses: marvinpinto/action-automatic-releases@latest
         with:
           repo_token: '${{ secrets.GITHUB_TOKEN }}'
+          # 注意: 将 automatic_release_tag 设置为 'latest' 并在 'push' 事件上触发，
+          # 意味着每次 push 都会尝试更新同一个 'latest' 标签的 Release。
+          # 这可能会覆盖之前的开发构建版本。
+          # 请确认这是你想要的行为。如果需要为每个构建创建一个唯一的 Release，
+          # 可以考虑使用动态标签，例如:
+          # automatic_release_tag: dev-${{ github.sha }}
+          # 或者只在特定分支或 tag 上触发此步骤。
           automatic_release_tag: latest
           prerelease: true
           title: Dev Build
