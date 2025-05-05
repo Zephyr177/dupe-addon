@@ -9,6 +9,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.registry.RegistryWrapper;
 
 /**
  * Exploit targeting CraftMetaBundle vulnerability
@@ -37,6 +38,7 @@ public class PaperDupe extends Module {
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (mc.player == null || mc.world == null) return;
+        RegistryWrapper.WrapperLookup registryLookup = mc.world.getRegistryManager();
 
         // Check if player has necessary items
         if (stage == 0) {
@@ -56,7 +58,7 @@ public class PaperDupe extends Module {
         // Add item to bundle 
         else if (stage == 1) {
             // Add item to bundle using NBT manipulation (simulating CraftMetaBundle.addItem())
-            addItemToBundle(bundleItem, originalItem);
+            addItemToBundle(registryLookup, bundleItem, originalItem);
             mc.player.sendMessage(Text.of("§a[BundleDupe] §fItem added to bundle. Now modifying reference..."), false);
             stage = 2;
         }
@@ -83,8 +85,8 @@ public class PaperDupe extends Module {
      * Simulates CraftMetaBundle.addItem() without defensive copying
      * In actual implementation, this would exploit the real CraftMetaBundle class
      */
-    private void addItemToBundle(ItemStack bundle, ItemStack item) {
-        NbtCompound bundleTag = bundle.getOrCreateNbt();
+    private void addItemToBundle(RegistryWrapper.WrapperLookup registryLookup, ItemStack bundle, ItemStack item) {
+        NbtCompound bundleTag = bundle.getOrCreateNbt(registryLookup);
         NbtList itemsTag;
         
         if (bundleTag.contains("Items", 9)) {
@@ -98,18 +100,18 @@ public class PaperDupe extends Module {
         // In real CraftMetaBundle the vulnerability is that it does:
         // this.items.add(item); // instead of this.items.add(item.clone());
         NbtCompound itemTag = new NbtCompound();
-        item.writeNbt(itemTag);
+        item.writeNbt(registryLookup, itemTag);
         itemsTag.add(itemTag);
         
         // Update bundle display
-        updateBundleDisplay(bundle);
+        updateBundleDisplay(registryLookup, bundle);
     }
     
     /**
      * Updates the bundle's display properties
      */
-    private void updateBundleDisplay(ItemStack bundle) {
-        NbtCompound tag = bundle.getOrCreateNbt();
+    private void updateBundleDisplay(RegistryWrapper.WrapperLookup registryLookup, ItemStack bundle) {
+        NbtCompound tag = bundle.getOrCreateNbt(registryLookup);
         if (!tag.contains("Items", 9)) return;
         
         NbtList items = tag.getList("Items", 10);
@@ -117,8 +119,9 @@ public class PaperDupe extends Module {
         
         for (int i = 0; i < items.size(); i++) {
             NbtCompound itemTag = items.getCompound(i);
-            ItemStack containedItem = ItemStack.fromNbt(itemTag);
-            fullness += getItemOccupancy(containedItem) * containedItem.getCount();
+            ItemStack.fromNbt(registryLookup, itemTag).ifPresent(containedItem -> {
+                fullness += getItemOccupancy(containedItem) * containedItem.getCount();
+            });
         }
         
         // Update bundle fullness
